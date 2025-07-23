@@ -31,6 +31,9 @@ class EngagementCount():
     def perform_file_date_mapping(self, files):
         """
         Maps filenames to their respective dates.
+
+        Args:
+            files (list): List of filenames to process.
         """
         file_date_mapping = {}
         
