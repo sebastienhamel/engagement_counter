@@ -55,7 +55,7 @@ class EngagementCount():
         """
         document = Document(doc_path)
         text = "\n".join([para.text for para in document.paragraphs])
-        speaker_pattern = re.compile(r"^([A-Z][a-z]+(?: [A-Z][a-z\-]+)*?)\s+", re.MULTILINE)
+        speaker_pattern = re.compile(r"^([A-Z][a-z]+(?: [A-Z][a-z]+)*(?:-[A-Z][a-z]+)?)\s{2,}", re.MULTILINE)
         speakers = speaker_pattern.findall(text)
         counts = defaultdict(int)
         
