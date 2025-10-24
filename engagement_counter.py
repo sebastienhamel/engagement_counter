@@ -154,7 +154,7 @@ class EngagementCount():
                         print(f"Skipping instructor {instructor_name} for date {date}")
                         continue
                 
-                data.append({"Date": date, "Speaker": speaker, "Intervention Count": count})
+                    data.append({"Date": date, "Speaker": speaker, "Intervention Count": count})
         
         return pd.DataFrame(data).sort_values(by=["Date", "Speaker"])
 
