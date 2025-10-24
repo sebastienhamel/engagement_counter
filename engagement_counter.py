@@ -13,7 +13,7 @@ class EngagementCount():
 
     def __init__(self, folder_path):
         self.folder_path = folder_path
-        self.instructor_name = self.get_instructor_name()
+        self.instructor_names = self.get_instructor_name()
     
     def extract_files_from_folder(self, folder_path, file_pattern=""):
         """
@@ -149,9 +149,10 @@ class EngagementCount():
         
         for date, speakers in summary.items():
             for speaker, count in speakers.items():
-                if self.instructor_name and speaker == self.instructor_name:
-                    print(f"Skipping instructor {self.instructor_name} for date {date}")
-                    continue
+                for instructor_name in self.instructor_names: 
+                    if instructor_name and speaker == instructor_name:
+                        print(f"Skipping instructor {instructor_name} for date {date}")
+                        continue
                 
                 data.append({"Date": date, "Speaker": speaker, "Intervention Count": count})
         
@@ -172,10 +173,10 @@ class EngagementCount():
         """
         Returns the instructor's name.
         """
-        instructor_name_file = "instructor_name.txt"
-        with open(instructor_name_file, "r", encoding="utf-8") as f:
-            instructor_name = f.read().strip()
-        return instructor_name or None
+        instructor_names_file = "instructor_name.txt"
+        with open(instructor_names_file, "r", encoding="utf-8") as f:
+            instructor_names = f.read().strip().split("\n")
+        return instructor_names or None
 
 
 if __name__ == "__main__":
