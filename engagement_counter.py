@@ -55,7 +55,7 @@ class EngagementCount():
         """
         document = Document(doc_path)
         text = "\n".join([para.text for para in document.paragraphs])
-        speaker_pattern = re.compile(r"^([A-Z][a-z]+(?: [A-Z][a-z]+)*(?:-[A-Z][a-z]+)?)\s{2,}", re.MULTILINE)
+        speaker_pattern = re.compile(r"([A-Z][a-zA-Z]+(?: ?[A-Z][a-zA-Z]+)*(?:-[A-Z][a-zA-Z]+)?)\s{2,}", re.MULTILINE)
         speakers = speaker_pattern.findall(text)
         counts = defaultdict(int)
         
@@ -92,6 +92,7 @@ class EngagementCount():
             
             for para in document.paragraphs[:3]:  # Only check first few lines
                 text = para.text.strip()
+                
                 
                 # Try "Month Day, Year" format
                 match = re.search(r"([A-Za-z]+ \d{1,2}, \d{4})", text)
@@ -149,12 +150,11 @@ class EngagementCount():
         
         for date, speakers in summary.items():
             for speaker, count in speakers.items():
-                for instructor_name in self.instructor_names: 
-                    if instructor_name and speaker == instructor_name:
-                        print(f"Skipping instructor {instructor_name} for date {date}")
-                        continue
+                if speaker in self.instructor_names:
+                    print(f"Skipping instructor {speaker} for date {date}")
+                    continue
                 
-                    data.append({"Date": date, "Speaker": speaker, "Intervention Count": count})
+                data.append({"Date": date, "Speaker": speaker, "Intervention Count": count})
         
         return pd.DataFrame(data).sort_values(by=["Date", "Speaker"])
 
