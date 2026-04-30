@@ -1,9 +1,10 @@
+import datetime
+import os
+import re
+
 from docx import Document
 from collections import defaultdict
-import os
 import pandas as pd
-import re
-import datetime
 
 class EngagementCount():
     """
@@ -106,6 +107,7 @@ class EngagementCount():
                 match = re.search(r"(\d{4}-\d{2}-\d{2})", text)
                 if match:
                     return match.group(1)
+                
                 
                 # Try YYYYMMDD
                 match = re.search(r"(\d{8})", text)
