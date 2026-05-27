@@ -51,19 +51,43 @@ class EngagementCount():
         return file_date_mapping
         
     def extract_interventions(self, doc_path):
-        """Extracts interventions from a Word document.
-        Returns a dictionary with speaker names as keys and their intervention counts as values.
+        """
+            Extracts interventions from a Word document.
+            
+            Returns:
+                {
+                    "Speaker Name": {
+                        "count": int,
+                        "interventions": [list of spoken text]
+                    }
+                }
+        
         """
         document = Document(doc_path)
         text = "\n".join([para.text for para in document.paragraphs])
-        speaker_pattern = re.compile(r"([A-Z][a-zA-Z]+(?: ?[A-Z][a-zA-Z]+)*(?:-[A-Z][a-zA-Z]+)?)\s{2,}", re.MULTILINE)
-        speakers = speaker_pattern.findall(text)
-        counts = defaultdict(int)
-        
-        for speaker in speakers:
-            counts[speaker.strip()] += 1
-        
-        return counts
+
+        # Match:
+        # Speaker Name   timestamp
+        # speech text...
+        pattern = re.compile(
+            r"([A-Z][a-zA-Z]+(?: [A-Z][a-zA-Z]+)*)\s+\d+:\d+\s*(.*?)"
+            r"(?=\n[A-Z][a-zA-Z]+(?: [A-Z][a-zA-Z]+)*\s+\d+:\d+|\Z)",
+            re.DOTALL
+        )
+
+        results = defaultdict(lambda: {
+            "count": 0,
+            "interventions": []
+        })
+
+        for match in pattern.finditer(text):
+            speaker = match.group(1).strip()
+            speech = match.group(2).strip()
+
+            results[speaker]["count"] += 1
+            results[speaker]["interventions"].append(speech)
+
+        return dict(results)
 
     def get_date_from_file(self, filepath):
         """
@@ -139,9 +163,11 @@ class EngagementCount():
             except Exception as e:
                 print(f"Error processing file {full_path}: {e}")
             
-            for speaker, count in daily_counts.items():
-                summary[date][speaker] += count
-        
+            for speaker, data in daily_counts.items():
+                summary[date][speaker] = {
+                    'count': data['count'],
+                    'interventions': data['interventions']
+                }
         return summary
 
     def flatten_summary_to_dataframe(self, summary):
@@ -151,12 +177,12 @@ class EngagementCount():
         data = []
         
         for date, speakers in summary.items():
-            for speaker, count in speakers.items():
+            for speaker, speaker_data in speakers.items():
                 if speaker in self.instructor_names:
                     print(f"Skipping instructor {speaker} for date {date}")
                     continue
                 
-                data.append({"Date": date, "Speaker": speaker, "Intervention Count": count})
+                data.append({"Date": date, "Speaker": speaker, "Intervention Count": speaker_data['count'], 'Interventions': speaker_data['interventions']})
         
         return pd.DataFrame(data).sort_values(by=["Date", "Speaker"])
 
@@ -168,9 +194,27 @@ class EngagementCount():
             os.makedirs(folder_path)
 
         output_file = os.path.join(folder_path, "engagement_summary.csv")
-        df.to_csv(output_file, index=False)
+        df.loc[:, 'Date':'Intervention Count'].to_csv(output_file, index=False)
         print(f"Engagement summary saved to {output_file}")
 
+    
+    def save_interventions_to_text(self, df, folder_path):
+
+        for speaker in df['Speaker'].unique():
+            speaker_name = speaker.replace(" ", "_")
+            output_file = os.path.join(folder_path, f"{speaker_name}-interventions.docx")
+
+            doc = Document()
+            p = doc.add_paragraph()
+
+            for index, row in df[df['Speaker'] == speaker].iterrows():
+                run = p.add_run(f"{row['Date']}:\n")
+                run.bold = True
+                p.add_run(f"{"\n".join(row['Interventions'])}\n\n")
+
+            doc.save(output_file)
+
+    
     def get_instructor_name(self):
         """
         Returns the instructor's name.
@@ -188,11 +232,12 @@ if __name__ == "__main__":
     engagement_counter = EngagementCount(folder_path)
     
     print("Starting engagement counter script...")
-    files = engagement_counter.extract_files_from_folder(folder_path, file_pattern)
+    files = engagement_counter.extract_files_from_folder(folder_path, "")
     file_date_mapping = engagement_counter.perform_file_date_mapping(files)
     summary = engagement_counter.extract_interventions_from_files(file_date_mapping)
     df = engagement_counter.flatten_summary_to_dataframe(summary)
     engagement_counter.save_summary_to_csv(df, folder_path)
+    engagement_counter.save_interventions_to_text(df, folder_path)
     print("Engagement counter script completed successfully.")
 
 
