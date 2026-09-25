@@ -69,9 +69,48 @@ class EngagementCount():
         # Match:
         # Speaker Name   timestamp
         # speech text...
+        # pattern = re.compile(
+        #     r"("
+        #         r"(?:[A-Z][a-zA-Z]*|\d+)"                 # First word
+        #         r"(?:[ ,]+(?:[A-Z][a-zA-Z]*|\d+))*"       # Additional words
+        #         r"(?:\s*\([^)]*\))?"                      # Optional (expression)
+        #     r")\s+\d+:\d+\s*(.*?)"
+        #     r"(?=\n"
+        #         r"(?:[A-Z][a-zA-Z]*|\d+)"
+        #         r"(?:[ ,]+(?:[A-Z][a-zA-Z]*|\d+))*"
+        #         r"(?:\s*\([^)]*\))?"
+        #         r"\s+\d+:\d+"
+        #     r"|\Z)",
+        #     re.DOTALL
+        # )
+
         pattern = re.compile(
-            r"([A-Z][a-zA-Z]+(?: [A-Z][a-zA-Z]+)*)\s+\d+:\d+\s*(.*?)"
-            r"(?=\n[A-Z][a-zA-Z]+(?: [A-Z][a-zA-Z]+)*\s+\d+:\d+|\Z)",
+            r"("
+                r"(?:[A-Z][a-zA-Z]*|\d+)"                    # First word
+                r"(?:[ ,]+(?:[A-Z][a-zA-Z]*|\d+))*"          # Additional words
+                r"(?:\s*\([^)]*\))?"                         # Optional (expression)
+            r")\s+\d+:\d+\s*(.*?)"
+            r"(?=\n"
+                r"(?:[A-Z][a-zA-Z]*|\d+)"
+                r"(?:[ ,]+(?:[A-Z][a-zA-Z]*|\d+))*"
+                r"(?:\s*\([^)]*\))?"
+                r"\s+\d+:\d+"
+            r"|\Z)",
+            re.DOTALL
+        )
+
+        pattern = re.compile(
+            r"("
+                r"(?:[A-Z][a-zA-Z0-9]*|\d+)"                    # First word (allow letters and digits)
+                r"(?:[ ,]+(?:[A-Z][a-zA-Z0-9]*|\d+))*"          # Additional words (allow letters, digits, and spaces/comma separators)
+                r"(?:\s*\([^)]*\))?"                         # Optional (expression)
+            r")\s+\d+:\d+\s*(.*?)"
+            r"(?=\n"
+                r"(?:[A-Z][a-zA-Z0-9]*|\d+)"                    # Next line's first word
+                r"(?:[ ,]+(?:[A-Z][a-zA-Z0-9]*|\d+))*"          # Additional words
+                r"(?:\s*\([^)]*\))?"                         # Optional (expression)
+                r"\s+\d+:\d+"
+            r"|\Z)",
             re.DOTALL
         )
 
@@ -182,7 +221,7 @@ class EngagementCount():
                     print(f"Skipping instructor {speaker} for date {date}")
                     continue
                 
-                data.append({"Date": date, "Speaker": speaker, "Intervention Count": speaker_data['count'], 'Interventions': speaker_data['interventions']})
+                data.append({"date": date, "speaker": speaker, "intervention_count": speaker_data['count'], 'interventions': speaker_data['interventions']})
         
         return pd.DataFrame(data).sort_values(by=["Date", "Speaker"])
 
@@ -201,7 +240,9 @@ class EngagementCount():
     def save_interventions_to_text(self, df, folder_path):
 
         for speaker in df['Speaker'].unique():
-            speaker_name = speaker.replace(" ", "_")
+            speaker_name = speaker.replace(", ", "_")
+            speaker_name = re.sub(r"\s*\(.*", "", speaker_name)
+            speaker_name = speaker_name.replace(" ", "_")
             output_file = os.path.join(folder_path, f"{speaker_name}-interventions.docx")
 
             doc = Document()
